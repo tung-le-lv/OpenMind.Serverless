@@ -1,5 +1,5 @@
 using Amazon.Lambda.APIGatewayEvents;
-using Order.Application.DTOs;
+using Order.Api.Shared;
 using System.Text.Json;
 
 namespace Order.Api.Helpers;

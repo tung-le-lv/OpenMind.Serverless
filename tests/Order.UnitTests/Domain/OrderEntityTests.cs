@@ -1,17 +1,17 @@
 using FluentAssertions;
-using Order.Domain.Entities;
-using Order.Domain.Enums;
-using Order.Domain.ValueObjects;
+using Order.Api.Domain.Entities;
+using Order.Api.Domain.Enums;
+using Order.Api.Domain.ValueObjects;
 using Xunit;
 
 namespace Order.UnitTests.Domain;
 
-public class OrderEntityTests
+public class OrderAggregateTests
 {
     [Fact]
     public void Create_WithValidCustomerId_ShouldCreateOrder()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
 
         order.Should().NotBeNull();
         order.CustomerId.Should().Be("customer-123");
@@ -23,7 +23,7 @@ public class OrderEntityTests
     [Fact]
     public void Create_WithEmptyCustomerId_ShouldThrowException()
     {
-        var act = () => OrderEntity.Create("");
+        var act = () => OrderAggregate.Create("");
 
         act.Should().Throw<DomainException>()
             .WithMessage("Customer ID is required.");
@@ -34,7 +34,7 @@ public class OrderEntityTests
     {
         var address = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
 
-        var order = OrderEntity.Create("customer-123", address);
+        var order = OrderAggregate.Create("customer-123", address);
 
         order.ShippingAddress.Should().NotBeNull();
         order.ShippingAddress!.City.Should().Be("Seattle");
@@ -43,7 +43,7 @@ public class OrderEntityTests
     [Fact]
     public void AddItem_ToPendingOrder_ShouldAddItem()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
 
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
 
@@ -54,7 +54,7 @@ public class OrderEntityTests
     [Fact]
     public void AddItem_SameProduct_ShouldIncreaseQuantity()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
 
         order.AddItem("prod-1", "Product 1", 3, 10.00m);
@@ -67,7 +67,7 @@ public class OrderEntityTests
     [Fact]
     public void UpdateStatus_ValidTransition_ShouldUpdateStatus()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
 
         order.UpdateStatus(OrderStatus.Confirmed);
 
@@ -77,7 +77,7 @@ public class OrderEntityTests
     [Fact]
     public void UpdateStatus_InvalidTransition_ShouldThrowException()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
 
         var act = () => order.UpdateStatus(OrderStatus.Shipped);
 
@@ -88,7 +88,7 @@ public class OrderEntityTests
     [Fact]
     public void Cancel_PendingOrder_ShouldCancelSuccessfully()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
 
         order.Cancel();
 
@@ -98,7 +98,7 @@ public class OrderEntityTests
     [Fact]
     public void Cancel_ShippedOrder_ShouldThrowException()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
         order.UpdateStatus(OrderStatus.Confirmed);
         order.UpdateStatus(OrderStatus.Processing);
         order.UpdateStatus(OrderStatus.Shipped);
@@ -112,7 +112,7 @@ public class OrderEntityTests
     [Fact]
     public void RemoveItem_FromPendingOrder_ShouldRemoveItem()
     {
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
         order.AddItem("prod-2", "Product 2", 1, 15.00m);
 

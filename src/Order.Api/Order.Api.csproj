@@ -13,14 +13,13 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.400" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
     <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="1.6.0" />
     <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="1.6.0" />
     <PackageReference Include="AWS.Lambda.Powertools.Metrics" Version="1.6.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Order.Application\Order.Application.csproj" />
-    <ProjectReference Include="..\Order.Infrastructure\Order.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

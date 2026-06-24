@@ -1,12 +1,10 @@
 using FluentAssertions;
 using Moq;
-using Order.Application.DTOs;
-using Order.Application.Handlers.Queries;
-using Order.Application.Queries;
-using Order.Domain.Entities;
-using Order.Domain.Enums;
-using Order.Domain.Repositories;
-using Order.Domain.ValueObjects;
+using Order.Api.Domain.Entities;
+using Order.Api.Domain.Enums;
+using Order.Api.Domain.Repositories;
+using Order.Api.Domain.ValueObjects;
+using Order.Api.Features.GetOrder;
 using Xunit;
 
 namespace Order.UnitTests.Application;
@@ -14,30 +12,25 @@ namespace Order.UnitTests.Application;
 public class GetOrderQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _mockRepository;
-    private readonly GetOrderQueryHandler _handler;
+    private readonly GetOrderHandler _handler;
 
     public GetOrderQueryHandlerTests()
     {
         _mockRepository = new Mock<IOrderRepository>();
-        _handler = new GetOrderQueryHandler(_mockRepository.Object);
+        _handler = new GetOrderHandler(_mockRepository.Object);
     }
 
     [Fact]
     public async Task Handle_WithExistingOrder_ShouldReturnOrderDto()
     {
-        // Arrange
         var orderId = "order-123";
         var order = CreateTestOrder(orderId, "customer-123");
 
         _mockRepository.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
 
-        var query = new GetOrderQuery(orderId);
+        var result = await _handler.Handle(new GetOrderQuery(orderId), CancellationToken.None);
 
-        // Act
-        var result = await _handler.Handle(query, CancellationToken.None);
-
-        // Assert
         result.Should().NotBeNull();
         result!.Id.Should().Be(orderId);
         result.CustomerId.Should().Be("customer-123");
@@ -48,18 +41,15 @@ public class GetOrderQueryHandlerTests
     {
         var orderId = "non-existent";
         _mockRepository.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderEntity?)null);
+            .ReturnsAsync((OrderAggregate?)null);
 
-        var query = new GetOrderQuery(orderId);
-
-        var result = await _handler.Handle(query, CancellationToken.None);
+        var result = await _handler.Handle(new GetOrderQuery(orderId), CancellationToken.None);
 
         result.Should().BeNull();
     }
 
-    private static OrderEntity CreateTestOrder(string orderId, string customerId)
-    {
-        return OrderEntity.Reconstitute(
+    private static OrderAggregate CreateTestOrder(string orderId, string customerId) =>
+        OrderAggregate.Reconstitute(
             id: orderId,
             customerId: customerId,
             items: [OrderItem.Reconstitute("prod-1", "Product 1", 2, 10.00m)],
@@ -69,5 +59,4 @@ public class GetOrderQueryHandlerTests
             createdAt: DateTime.UtcNow,
             updatedAt: DateTime.UtcNow
         );
-    }
 }

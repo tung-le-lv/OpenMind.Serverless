@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Moq;
-using Order.Application.Commands;
-using Order.Application.Handlers.Commands;
-using Order.Application.Interfaces;
-using Order.Domain.Entities;
-using Order.Domain.Events;
-using Order.Domain.Repositories;
+using Order.Api.Domain.Entities;
+using Order.Api.Domain.Events;
+using Order.Api.Domain.Interfaces;
+using Order.Api.Domain.Repositories;
+using Order.Api.Features.CreateOrder;
+using Order.Api.Shared;
 using Xunit;
 
 namespace Order.UnitTests.Application;
@@ -14,57 +14,45 @@ public class CreateOrderCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _mockRepository;
     private readonly Mock<IEventBus> _mockEventBus;
-    private readonly CreateOrderCommandHandler _handler;
+    private readonly CreateOrderHandler _handler;
 
     public CreateOrderCommandHandlerTests()
     {
         _mockRepository = new Mock<IOrderRepository>();
         _mockEventBus = new Mock<IEventBus>();
-        _handler = new CreateOrderCommandHandler(_mockRepository.Object, _mockEventBus.Object);
+        _handler = new CreateOrderHandler(_mockRepository.Object, _mockEventBus.Object);
     }
 
     [Fact]
     public async Task Handle_WithValidCommand_ShouldCreateOrder()
     {
-        // Arrange
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
-            Items:
-            [
-                new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)
-            ],
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
             ShippingAddress: new AddressDto("123 Main St", "Seattle", "WA", "98101", "USA")
         );
 
-        _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderEntity>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderEntity o, CancellationToken _) => o);
+        _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderAggregate>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderAggregate o, CancellationToken _) => o);
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Success.Should().BeTrue();
         result.OrderId.Should().NotBeNullOrEmpty();
-        _mockRepository.Verify(r => r.AddAsync(It.IsAny<OrderEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(r => r.AddAsync(It.IsAny<OrderAggregate>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Handle_WithEmptyCustomerId_ShouldReturnError()
     {
-        // Arrange
         var command = new CreateOrderCommand(
             CustomerId: "",
-            Items:
-            [
-                new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)
-            ],
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
             ShippingAddress: null
         );
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Success.Should().BeFalse();
         result.Errors.Should().NotBeEmpty();
     }
@@ -74,15 +62,12 @@ public class CreateOrderCommandHandlerTests
     {
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
-            Items:
-            [
-                new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)
-            ],
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
             ShippingAddress: null
         );
 
-        _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderEntity>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderEntity o, CancellationToken _) => o);
+        _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderAggregate>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderAggregate o, CancellationToken _) => o);
 
         await _handler.Handle(command, CancellationToken.None);
 

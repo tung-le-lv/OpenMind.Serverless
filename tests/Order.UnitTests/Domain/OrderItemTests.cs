@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Order.Domain.Entities;
+using Order.Api.Domain.Entities;
 using Xunit;
 
 namespace Order.UnitTests.Domain;

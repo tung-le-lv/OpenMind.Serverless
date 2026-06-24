@@ -2,9 +2,9 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using DotNet.Testcontainers.Builders;
 using FluentAssertions;
-using Order.Domain.Entities;
-using Order.Domain.ValueObjects;
-using Order.Infrastructure.Repositories;
+using Order.Api.Domain.Entities;
+using Order.Api.Domain.ValueObjects;
+using Order.Api.Infrastructure.Repositories;
 using Testcontainers.DynamoDb;
 using Xunit;
 
@@ -84,7 +84,7 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var address = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-        var order = OrderEntity.Create("customer-123", address);
+        var order = OrderAggregate.Create("customer-123", address);
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
 
         // Act
@@ -99,7 +99,7 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     public async Task GetByIdAsync_WithExistingOrder_ShouldReturnOrder()
     {
         // Arrange
-        var order = OrderEntity.Create("customer-123");
+        var order = OrderAggregate.Create("customer-123");
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
         await _repository!.AddAsync(order);
 
@@ -116,8 +116,8 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     public async Task GetByCustomerIdAsync_ShouldReturnCustomerOrders()
     {
         // Arrange
-        var order1 = OrderEntity.Create("customer-456");
-        var order2 = OrderEntity.Create("customer-456");
+        var order1 = OrderAggregate.Create("customer-456");
+        var order2 = OrderAggregate.Create("customer-456");
         await _repository!.AddAsync(order1);
         await _repository.AddAsync(order2);
 
@@ -131,7 +131,7 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task DeleteAsync_ShouldRemoveOrder()
     {
-        var order = OrderEntity.Create("customer-789");
+        var order = OrderAggregate.Create("customer-789");
         await _repository!.AddAsync(order);
 
         await _repository.DeleteAsync(order.Id);

@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+﻿AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Order Microservice - Clean Architecture with CQRS on AWS Lambda
 
@@ -62,7 +62,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-CreateOrder-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.CreateOrder::Handler
+      Handler: Order.Api::Order.Api.Features.CreateOrder.CreateOrderFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBCrudPolicy:
@@ -81,7 +81,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-GetOrder-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.GetOrder::Handler
+      Handler: Order.Api::Order.Api.Features.GetOrder.GetOrderFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBReadPolicy:
@@ -98,7 +98,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-GetAllOrders-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.GetAllOrders::Handler
+      Handler: Order.Api::Order.Api.Features.GetAllOrders.GetAllOrdersFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBReadPolicy:
@@ -115,7 +115,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-GetOrdersByCustomer-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.GetOrdersByCustomer::Handler
+      Handler: Order.Api::Order.Api.Features.GetOrdersByCustomer.GetOrdersByCustomerFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBReadPolicy:
@@ -132,7 +132,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-UpdateOrderStatus-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.UpdateOrderStatus::Handler
+      Handler: Order.Api::Order.Api.Features.UpdateOrderStatus.UpdateOrderStatusFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBCrudPolicy:
@@ -151,7 +151,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-CancelOrder-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.CancelOrder::Handler
+      Handler: Order.Api::Order.Api.Features.CancelOrder.CancelOrderFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBCrudPolicy:
@@ -170,7 +170,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-AddOrderItem-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.AddOrderItem::Handler
+      Handler: Order.Api::Order.Api.Features.AddOrderItem.AddOrderItemFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBCrudPolicy:
@@ -189,7 +189,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'Order-DeleteOrder-${Environment}'
-      Handler: Order.Api::Order.Api.Functions.DeleteOrder::Handler
+      Handler: Order.Api::Order.Api.Features.DeleteOrder.DeleteOrderFunction::Handler
       CodeUri: ./src/Order.Api/
       Policies:
         - DynamoDBCrudPolicy:
@@ -225,3 +225,4 @@ Outputs:
   OrderEventsTopicArn:
     Description: SNS Topic ARN for order events
     Value: !Ref OrderEventsTopic
+
