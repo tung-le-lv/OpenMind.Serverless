@@ -1,114 +1,102 @@
-# Order Microservice - Clean Architecture with AWS Lambda
+# Order Microservice — Serverless on AWS Lambda
 
-A serverless order microservice built with **Clean Architecture**, **CQRS pattern**, **DDD principles**, using **AWS Lambda**, **C#**, and **.NET 9**.
+A serverless order microservice built with **Vertical Slice Architecture**, **CQRS**, and **DDD**, deployed as individual AWS Lambda functions per endpoint using **.NET 9**.
 
 ## Architecture
 
+Each HTTP endpoint maps to its own Lambda function. Every function owns its full slice — from the HTTP handler down to the domain logic and data access.
+
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              API Gateway                                 │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Order.Api (Lambda Functions)                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
-│  │CreateOrder  │ │ GetOrder    │ │UpdateStatus │ │ CancelOrder │  ...  │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Order.Application (CQRS + MediatR)                    │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐            │
-│  │        Commands          │  │         Queries          │            │
-│  │  • CreateOrderCommand    │  │  • GetOrderQuery         │            │
-│  │  • UpdateStatusCommand   │  │  • GetAllOrdersQuery     │            │
-│  │  • CancelOrderCommand    │  │  • GetOrdersByCustomer   │            │
-│  │  • AddOrderItemCommand   │  │                          │            │
-│  └──────────────────────────┘  └──────────────────────────┘            │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       Order.Domain (DDD Entities)                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
-│  │   Entities   │  │ Value Objects│  │Domain Events │                  │
-│  │  • Order     │  │  • Money     │  │• OrderCreated│                  │
-│  │  • OrderItem │  │  • Address   │  │• StatusChanged│                 │
-│  └──────────────┘  └──────────────┘  └──────────────┘                  │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       Order.Infrastructure                               │
-│  ┌──────────────────────┐      ┌──────────────────────┐                │
-│  │    DynamoDB Repo     │      │    SNS Event Bus     │                │
-│  └──────────────────────┘      └──────────────────────┘                │
-└─────────────────────────────────────────────────────────────────────────┘
-                │                            │
-                ▼                            ▼
-        ┌───────────────┐           ┌───────────────┐
-        │   DynamoDB    │           │   SNS Topic   │
-        └───────────────┘           └───────────────┘
+API Gateway
+    │
+    ├── POST   /orders              → CreateOrderFunction
+    ├── GET    /orders              → GetAllOrdersFunction
+    ├── GET    /orders/{id}         → GetOrderFunction
+    ├── GET    /orders/customer/{customerId} → GetOrdersByCustomerFunction
+    ├── PUT    /orders/{id}/status  → UpdateOrderStatusFunction
+    ├── POST   /orders/{id}/cancel  → CancelOrderFunction
+    ├── POST   /orders/{id}/items   → AddOrderItemFunction
+    └── DELETE /orders/{id}         → DeleteOrderFunction
+                                           │
+                                    [Static DI container]
+                                           │
+                               ┌───────────┴───────────┐
+                          MediatR Handler         DynamoDB / SNS
 ```
+
+Each Lambda cold-starts with a **static `ServiceProvider`** that registers only the dependencies that slice needs — no shared container, no cross-slice coupling.
 
 ## Project Structure
 
 ```
-OrderService/
-├── src/
-│   ├── Order.Api/                    # AWS Lambda Functions
-│   │   ├── Functions/
-│   │   │   ├── CreateOrder.cs
-│   │   │   ├── GetOrder.cs
-│   │   │   ├── GetAllOrders.cs
-│   │   │   ├── GetOrdersByCustomer.cs
-│   │   │   ├── UpdateOrderStatus.cs
-│   │   │   ├── CancelOrder.cs
-│   │   │   ├── AddOrderItem.cs
-│   │   │   └── DeleteOrder.cs
-│   │   └── Extensions/
-│   │
-│   ├── Order.Application/            # Use cases (CQRS)
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   ├── Handlers/
-│   │   ├── DTOs/
-│   │   ├── Validators/
-│   │   ├── Mappers/
-│   │   └── Interfaces/
-│   │
-│   ├── Order.Domain/                 # Domain layer (DDD)
-│   │   ├── Entities/
-│   │   ├── ValueObjects/
-│   │   ├── Enums/
-│   │   ├── Events/
-│   │   └── Repositories/
-│   │
-│   └── Order.Infrastructure/         # External concerns
-│       ├── Repositories/
-│       └── EventBus/
-│
-├── tests/
-│   ├── Order.UnitTests/
-│   └── Order.IntegrationTests/
-│
-├── deploy/
-│   └── aws/
-│       ├── template.yaml
-│       ├── parameters.dev.json
-│       └── parameters.prod.json
-│
-└── OrderService.sln
+src/
+└── Order.Api/                        # Single project — all layers merged
+    ├── Features/                     # Vertical slices (one folder per operation)
+    │   ├── CreateOrder/
+    │   │   ├── CreateOrderCommand.cs
+    │   │   ├── CreateOrderHandler.cs
+    │   │   ├── CreateOrderValidator.cs
+    │   │   └── CreateOrderFunction.cs
+    │   ├── GetOrder/
+    │   ├── GetAllOrders/
+    │   ├── GetOrdersByCustomer/
+    │   ├── UpdateOrderStatus/
+    │   ├── CancelOrder/
+    │   ├── AddOrderItem/
+    │   └── DeleteOrder/
+    │
+    ├── Domain/                       # DDD model
+    │   ├── Entities/                 # OrderAggregate, OrderItem, DomainException
+    │   ├── ValueObjects/             # Money, Address
+    │   ├── Events/                   # OrderCreated, OrderCancelled, ...
+    │   ├── Enums/                    # OrderStatus
+    │   ├── Interfaces/               # IEventBus
+    │   └── Repositories/             # IOrderRepository
+    │
+    ├── Infrastructure/               # AWS adapters
+    │   ├── Repositories/             # DynamoDbOrderRepository
+    │   └── EventBus/                 # SnsEventBus, InMemoryEventBus
+    │
+    ├── Shared/                       # ApiResponse<T>, OrderDto, OrderMapper
+    └── Helpers/                      # ApiResponseHelper
+
+tests/
+├── Order.UnitTests/
+└── Order.IntegrationTests/           # Testcontainers (DynamoDB local)
+
+deploy/
+└── aws/
+    ├── template.yaml                 # AWS SAM — one function resource per endpoint
+    ├── parameters.dev.json
+    └── parameters.prod.json
+```
+
+## Key Design Decisions
+
+**Vertical Slice Architecture** — code is organized by feature, not by technical layer. Adding a new operation means adding one folder under `Features/`, self-contained from Lambda handler to domain logic.
+
+**Static DI per Lambda** — each `XxxFunction` holds a `private static readonly ServiceProvider` built once at cold start. Only that slice's dependencies are registered, keeping the container minimal.
+
+**MediatR with direct registration** — handlers are registered via `services.AddTransient<IRequestHandler<TReq, TRes>, THandler>()` rather than assembly scanning, so only the relevant handler is loaded per function.
+
+**Lambda Powertools** — structured JSON logging (`[Logging]`), X-Ray tracing (`[Tracing]`), and CloudWatch metrics (`[Metrics]`) via attributes on each handler method.
+
+**Rich domain model** — `OrderAggregate` is a DDD aggregate root with value objects (`Money`, `Address`), factory methods, and domain events. Events are published to SNS via `IEventBus` after each mutation.
+
+## Order Status Flow
+
+```
+Pending → Confirmed → Processing → Shipped → Delivered
+   │           │            │
+   └───────────┴────────────┴──────────────→ Cancelled
 ```
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
+| Method | Path | Description |
+|--------|------|-------------|
 | `POST` | `/orders` | Create a new order |
-| `GET` | `/orders` | Get all orders |
+| `GET` | `/orders` | List all orders |
 | `GET` | `/orders/{id}` | Get order by ID |
 | `GET` | `/orders/customer/{customerId}` | Get orders by customer |
 | `PUT` | `/orders/{id}/status` | Update order status |
@@ -116,68 +104,44 @@ OrderService/
 | `POST` | `/orders/{id}/items` | Add item to order |
 | `DELETE` | `/orders/{id}` | Delete an order |
 
-## Domain Events
-
-The service publishes domain events to SNS:
-- `OrderCreated` - When a new order is created
-- `OrderItemAdded` - When an item is added to an order
-- `OrderStatusChanged` - When order status changes
-- `OrderCancelled` - When an order is cancelled
-
 ## Prerequisites
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [AWS CLI](https://aws.amazon.com/cli/)
-- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-- [Docker](https://www.docker.com/) (for local testing and integration tests)
+- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
+- [Docker](https://www.docker.com/) (for integration tests)
 
 ## Getting Started
 
-### Build
-
 ```bash
+# Build
 dotnet build
-```
 
-### Run Tests
-
-```bash
 # Unit tests
 dotnet test tests/Order.UnitTests
 
-# Integration tests (requires Docker)
+# Integration tests (requires Docker for DynamoDB local)
 dotnet test tests/Order.IntegrationTests
 ```
 
-### Local Development
+### Local API
 
 ```bash
 cd deploy/aws
-
-# Build
 sam build
-
-# Start local API
 sam local start-api --parameter-overrides Environment=dev
-
-# Test endpoints
-curl http://localhost:3000/orders
 ```
 
 ## Deployment
 
-### Deploy to AWS
-
 ```bash
 cd deploy/aws
-
-# Build
 sam build
 
-# Deploy (first time - guided)
+# First deploy (interactive)
 sam deploy --guided
 
-# Deploy to specific environment
+# Subsequent deploys
 sam deploy --parameter-overrides Environment=prod --config-file parameters.prod.json
 ```
 
@@ -186,24 +150,15 @@ sam deploy --parameter-overrides Environment=prod --config-file parameters.prod.
 ### Create Order
 
 ```bash
-curl -X POST https://your-api.execute-api.region.amazonaws.com/dev/orders \
+curl -X POST https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders \
   -H "Content-Type: application/json" \
   -d '{
     "customerId": "cust-123",
     "items": [
-      {
-        "productId": "prod-001",
-        "productName": "Widget A",
-        "quantity": 2,
-        "unitPrice": 29.99
-      }
+      { "productId": "prod-001", "productName": "Widget A", "quantity": 2, "unitPrice": 29.99 }
     ],
     "shippingAddress": {
-      "street": "123 Main St",
-      "city": "Seattle",
-      "state": "WA",
-      "zipCode": "98101",
-      "country": "USA"
+      "street": "123 Main St", "city": "Seattle", "state": "WA", "zipCode": "98101", "country": "USA"
     }
   }'
 ```
@@ -211,40 +166,18 @@ curl -X POST https://your-api.execute-api.region.amazonaws.com/dev/orders \
 ### Update Order Status
 
 ```bash
-curl -X PUT https://your-api.execute-api.region.amazonaws.com/dev/orders/{id}/status \
+curl -X PUT https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders/{id}/status \
   -H "Content-Type: application/json" \
   -d '{"status": 1}'
 ```
 
-### Add Item to Order
+### Add Item
 
 ```bash
-curl -X POST https://your-api.execute-api.region.amazonaws.com/dev/orders/{id}/items \
+curl -X POST https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders/{id}/items \
   -H "Content-Type: application/json" \
-  -d '{
-    "productId": "prod-002",
-    "productName": "Widget B",
-    "quantity": 1,
-    "unitPrice": 49.99
-  }'
+  -d '{ "productId": "prod-002", "productName": "Widget B", "quantity": 1, "unitPrice": 49.99 }'
 ```
-
-## Order Status Flow
-
-```
-Pending → Confirmed → Processing → Shipped → Delivered
-    ↓          ↓           ↓
-    └──────────┴───────────┴──────→ Cancelled
-```
-
-## Key Design Patterns
-
-- **Clean Architecture**: Separation of concerns with clear boundaries
-- **CQRS**: Commands and Queries separated for better scalability
-- **DDD**: Rich domain model with entities, value objects, and domain events
-- **MediatR**: Decoupled request/response handling
-- **Repository Pattern**: Abstract data access
-- **Event-Driven**: Domain events published via SNS
 
 ## License
 
