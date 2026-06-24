@@ -20,7 +20,7 @@ public class AddOrderItem
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddAddOrderItemServices();
         return services.BuildServiceProvider();
     }
 

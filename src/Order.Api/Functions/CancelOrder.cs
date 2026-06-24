@@ -19,7 +19,7 @@ public class CancelOrder
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddCancelOrderServices();
         return services.BuildServiceProvider();
     }
 

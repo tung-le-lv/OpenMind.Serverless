@@ -14,27 +14,19 @@ using System.Text.Json;
 
 namespace Order.Api.Functions;
 
-public class UpdateOrderStatus
+public class UpdateOrderStatus(IMediator mediator)
 {
     private static readonly ServiceProvider _serviceProvider = BuildServiceProvider();
 
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddUpdateOrderStatusServices();
         return services.BuildServiceProvider();
     }
 
-    private readonly IMediator _mediator;
-
-    public UpdateOrderStatus()
+    public UpdateOrderStatus() : this(_serviceProvider.GetRequiredService<IMediator>())
     {
-        _mediator = _serviceProvider.GetRequiredService<IMediator>();
-    }
-
-    public UpdateOrderStatus(IMediator mediator)
-    {
-        _mediator = mediator;
     }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -65,7 +57,7 @@ public class UpdateOrderStatus
             Logger.LogInformation("Updating status for order {OrderId} to {Status}", orderId, updateRequest.Status);
 
             var command = new UpdateOrderStatusCommand(orderId, updateRequest.Status);
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
 
             if (!result.Success)
             {

@@ -18,7 +18,7 @@ public class GetOrdersByCustomer
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddGetOrdersByCustomerServices();
         return services.BuildServiceProvider();
     }
 

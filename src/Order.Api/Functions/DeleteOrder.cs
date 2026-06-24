@@ -19,7 +19,7 @@ public class DeleteOrder
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddDeleteOrderServices();
         return services.BuildServiceProvider();
     }
 

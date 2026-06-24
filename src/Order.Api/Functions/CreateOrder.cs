@@ -13,27 +13,19 @@ using System.Text.Json;
 
 namespace Order.Api.Functions;
 
-public class CreateOrder
+public class CreateOrder(IMediator mediator)
 {
     private static readonly ServiceProvider _serviceProvider = BuildServiceProvider();
 
     private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-        services.AddOrderServices();
+        services.AddCreateOrderServices();
         return services.BuildServiceProvider();
     }
 
-    private readonly IMediator _mediator;
-
-    public CreateOrder()
+    public CreateOrder() : this(_serviceProvider.GetRequiredService<IMediator>())
     {
-        _mediator = _serviceProvider.GetRequiredService<IMediator>();
-    }
-
-    public CreateOrder(IMediator mediator)
-    {
-        _mediator = mediator;
     }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -57,7 +49,7 @@ public class CreateOrder
 
             Logger.LogInformation("Creating order for customer {CustomerId}", command.CustomerId);
 
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command);
 
             if (!result.Success)
             {
