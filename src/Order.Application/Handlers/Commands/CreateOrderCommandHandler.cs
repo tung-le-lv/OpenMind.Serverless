@@ -7,22 +7,12 @@ using Order.Application.Interfaces;
 
 namespace Order.Application.Handlers.Commands;
 
-public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, CreateOrderResult>
+public class CreateOrderCommandHandler(IOrderRepository orderRepository, IEventBus eventBus) : IRequestHandler<CreateOrderCommand, CreateOrderResult>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IEventBus _eventBus;
-
-    public CreateOrderCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
-    {
-        _orderRepository = orderRepository;
-        _eventBus = eventBus;
-    }
-
     public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            // Create shipping address if provided
             Address? shippingAddress = null;
             if (request.ShippingAddress != null)
             {
@@ -35,22 +25,18 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
                 );
             }
 
-            // Create order entity
             var order = OrderEntity.Create(request.CustomerId, shippingAddress);
 
-            // Add items
             foreach (var item in request.Items)
             {
                 order.AddItem(item.ProductId, item.ProductName, item.Quantity, item.UnitPrice);
             }
 
-            // Persist order
-            await _orderRepository.AddAsync(order, cancellationToken);
+            await orderRepository.AddAsync(order, cancellationToken);
 
-            // Publish domain events
             foreach (var domainEvent in order.DomainEvents)
             {
-                await _eventBus.PublishAsync(domainEvent, cancellationToken);
+                await eventBus.PublishAsync(domainEvent, cancellationToken);
             }
             order.ClearDomainEvents();
 

@@ -46,17 +46,14 @@ public class GetOrderQueryHandlerTests
     [Fact]
     public async Task Handle_WithNonExistingOrder_ShouldReturnNull()
     {
-        // Arrange
         var orderId = "non-existent";
         _mockRepository.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OrderEntity?)null);
 
         var query = new GetOrderQuery(orderId);
 
-        // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        // Assert
         result.Should().BeNull();
     }
 

@@ -9,7 +9,7 @@ public class OrderEntity
     private readonly List<OrderItem> _items = [];
     private readonly List<IDomainEvent> _domainEvents = [];
 
-    public string Id { get; private set; } = string.Empty;
+    public string Id { get; private init; } = string.Empty;
     public string CustomerId { get; private set; } = string.Empty;
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
     public Money TotalAmount { get; private set; } = Money.Zero;
@@ -175,7 +175,4 @@ public class OrderEntity
     }
 }
 
-public class DomainException : Exception
-{
-    public DomainException(string message) : base(message) { }
-}
+public class DomainException(string message) : Exception(message);

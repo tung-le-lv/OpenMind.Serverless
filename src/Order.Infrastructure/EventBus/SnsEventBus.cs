@@ -6,22 +6,14 @@ using System.Text.Json;
 
 namespace Order.Infrastructure.EventBus;
 
-public class SnsEventBus : IEventBus
+public class SnsEventBus(IAmazonSimpleNotificationService snsClient) : IEventBus
 {
-    private readonly IAmazonSimpleNotificationService _snsClient;
-    private readonly string _topicArn;
-
-    public SnsEventBus(IAmazonSimpleNotificationService snsClient)
-    {
-        _snsClient = snsClient;
-        _topicArn = Environment.GetEnvironmentVariable("ORDER_EVENTS_TOPIC_ARN") ?? string.Empty;
-    }
+    private readonly string _topicArn = Environment.GetEnvironmentVariable("ORDER_EVENTS_TOPIC_ARN") ?? string.Empty;
 
     public async Task PublishAsync<T>(T domainEvent, CancellationToken cancellationToken = default) where T : IDomainEvent
     {
         if (string.IsNullOrEmpty(_topicArn))
         {
-            // Log warning - topic not configured
             return;
         }
 
@@ -50,6 +42,6 @@ public class SnsEventBus : IEventBus
             }
         };
 
-        await _snsClient.PublishAsync(request, cancellationToken);
+        await snsClient.PublishAsync(request, cancellationToken);
     }
 }

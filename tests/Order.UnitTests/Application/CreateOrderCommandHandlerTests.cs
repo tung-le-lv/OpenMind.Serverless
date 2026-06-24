@@ -72,7 +72,6 @@ public class CreateOrderCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldPublishDomainEvents()
     {
-        // Arrange
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
             Items:
@@ -85,10 +84,8 @@ public class CreateOrderCommandHandlerTests
         _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((OrderEntity o, CancellationToken _) => o);
 
-        // Act
         await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         _mockEventBus.Verify(e => e.PublishAsync(It.IsAny<IDomainEvent>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 }

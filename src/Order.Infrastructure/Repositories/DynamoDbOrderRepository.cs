@@ -8,16 +8,9 @@ using System.Text.Json;
 
 namespace Order.Infrastructure.Repositories;
 
-public class DynamoDbOrderRepository : IOrderRepository
+public class DynamoDbOrderRepository(IAmazonDynamoDB dynamoDbClient) : IOrderRepository
 {
-    private readonly IAmazonDynamoDB _dynamoDbClient;
-    private readonly string _tableName;
-
-    public DynamoDbOrderRepository(IAmazonDynamoDB dynamoDbClient)
-    {
-        _dynamoDbClient = dynamoDbClient;
-        _tableName = Environment.GetEnvironmentVariable("ORDERS_TABLE") ?? "Orders";
-    }
+    private readonly string _tableName = Environment.GetEnvironmentVariable("ORDERS_TABLE") ?? "Orders";
 
     public async Task<OrderEntity?> GetByIdAsync(string orderId, CancellationToken cancellationToken = default)
     {
@@ -30,12 +23,9 @@ public class DynamoDbOrderRepository : IOrderRepository
             }
         };
 
-        var response = await _dynamoDbClient.GetItemAsync(request, cancellationToken);
+        var response = await dynamoDbClient.GetItemAsync(request, cancellationToken);
 
-        if (!response.IsItemSet)
-            return null;
-
-        return MapToOrder(response.Item);
+        return !response.IsItemSet ? null : MapToOrder(response.Item);
     }
 
     public async Task<IEnumerable<OrderEntity>> GetByCustomerIdAsync(string customerId, CancellationToken cancellationToken = default)
@@ -51,7 +41,7 @@ public class DynamoDbOrderRepository : IOrderRepository
             }
         };
 
-        var response = await _dynamoDbClient.QueryAsync(request, cancellationToken);
+        var response = await dynamoDbClient.QueryAsync(request, cancellationToken);
         return response.Items.Select(MapToOrder);
     }
 
@@ -62,7 +52,7 @@ public class DynamoDbOrderRepository : IOrderRepository
             TableName = _tableName
         };
 
-        var response = await _dynamoDbClient.ScanAsync(request, cancellationToken);
+        var response = await dynamoDbClient.ScanAsync(request, cancellationToken);
         return response.Items.Select(MapToOrder);
     }
 
@@ -76,7 +66,7 @@ public class DynamoDbOrderRepository : IOrderRepository
             Item = item
         };
 
-        await _dynamoDbClient.PutItemAsync(request, cancellationToken);
+        await dynamoDbClient.PutItemAsync(request, cancellationToken);
         return order;
     }
 
@@ -90,7 +80,7 @@ public class DynamoDbOrderRepository : IOrderRepository
             Item = item
         };
 
-        await _dynamoDbClient.PutItemAsync(request, cancellationToken);
+        await dynamoDbClient.PutItemAsync(request, cancellationToken);
         return order;
     }
 
@@ -105,7 +95,7 @@ public class DynamoDbOrderRepository : IOrderRepository
             }
         };
 
-        await _dynamoDbClient.DeleteItemAsync(request, cancellationToken);
+        await dynamoDbClient.DeleteItemAsync(request, cancellationToken);
     }
 
     private static Dictionary<string, AttributeValue> MapToAttributeValues(OrderEntity order)

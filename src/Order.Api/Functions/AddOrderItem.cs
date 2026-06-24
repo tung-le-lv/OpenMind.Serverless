@@ -11,22 +11,26 @@ namespace Order.Api.Functions;
 
 public class AddOrderItem
 {
-    private readonly IMediator _mediator;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private static readonly ServiceProvider _serviceProvider = BuildServiceProvider();
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public AddOrderItem()
+    private static ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
         services.AddOrderServices();
-        var provider = services.BuildServiceProvider();
-        _mediator = provider.GetRequiredService<IMediator>();
-        _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        return services.BuildServiceProvider();
+    }
+
+    private readonly IMediator _mediator;
+
+    public AddOrderItem()
+    {
+        _mediator = _serviceProvider.GetRequiredService<IMediator>();
     }
 
     public AddOrderItem(IMediator mediator)
     {
         _mediator = mediator;
-        _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -78,7 +82,7 @@ public class AddOrderItem
         }
     }
 
-    private APIGatewayProxyResponse CreateResponse<T>(int statusCode, ApiResponse<T> body)
+    private static APIGatewayProxyResponse CreateResponse<T>(int statusCode, ApiResponse<T> body)
     {
         return new APIGatewayProxyResponse
         {

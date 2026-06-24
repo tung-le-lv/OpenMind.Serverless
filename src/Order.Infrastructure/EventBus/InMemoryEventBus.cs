@@ -3,10 +3,6 @@ using Order.Domain.Events;
 
 namespace Order.Infrastructure.EventBus;
 
-/// <summary>
-/// In-memory event bus for local development and testing.
-/// Events are logged but not persisted.
-/// </summary>
 public class InMemoryEventBus : IEventBus
 {
     private readonly List<IDomainEvent> _events = [];

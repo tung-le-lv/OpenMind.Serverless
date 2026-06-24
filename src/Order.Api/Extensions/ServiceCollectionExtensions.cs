@@ -15,14 +15,11 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOrderServices(this IServiceCollection services)
     {
-        // AWS Services
         services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
         services.AddSingleton<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>();
 
-        // Repositories
         services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
 
-        // Event Bus
         var useLocalEventBus = Environment.GetEnvironmentVariable("USE_LOCAL_EVENT_BUS") == "true";
         if (useLocalEventBus)
         {
@@ -33,10 +30,8 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEventBus, SnsEventBus>();
         }
 
-        // MediatR
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateOrderCommandHandler).Assembly));
 
-        // FluentValidation
         services.AddValidatorsFromAssemblyContaining<CreateOrderCommandValidator>();
 
         return services;

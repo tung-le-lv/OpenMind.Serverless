@@ -131,14 +131,11 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task DeleteAsync_ShouldRemoveOrder()
     {
-        // Arrange
         var order = OrderEntity.Create("customer-789");
         await _repository!.AddAsync(order);
 
-        // Act
         await _repository.DeleteAsync(order.Id);
 
-        // Assert
         var result = await _repository.GetByIdAsync(order.Id);
         result.Should().BeNull();
     }

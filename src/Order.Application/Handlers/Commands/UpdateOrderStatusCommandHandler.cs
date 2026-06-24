@@ -6,34 +6,24 @@ using Order.Domain.Repositories;
 
 namespace Order.Application.Handlers.Commands;
 
-public class UpdateOrderStatusCommandHandler : IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>
+public class UpdateOrderStatusCommandHandler(IOrderRepository orderRepository, IEventBus eventBus) : IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IEventBus _eventBus;
-
-    public UpdateOrderStatusCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
-    {
-        _orderRepository = orderRepository;
-        _eventBus = eventBus;
-    }
-
     public async Task<UpdateOrderStatusResult> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
+            var order = await orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
             if (order == null)
             {
                 return new UpdateOrderStatusResult(false, $"Order with ID '{request.OrderId}' not found.", null);
             }
 
             order.UpdateStatus(request.NewStatus);
-            await _orderRepository.UpdateAsync(order, cancellationToken);
+            await orderRepository.UpdateAsync(order, cancellationToken);
 
-            // Publish domain events
             foreach (var domainEvent in order.DomainEvents)
             {
-                await _eventBus.PublishAsync(domainEvent, cancellationToken);
+                await eventBus.PublishAsync(domainEvent, cancellationToken);
             }
             order.ClearDomainEvents();
 
