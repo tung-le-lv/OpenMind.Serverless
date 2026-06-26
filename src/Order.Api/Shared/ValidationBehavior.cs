@@ -10,7 +10,9 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (!validators.Any())
+        {
             return await next();
+        }
 
         var context = new ValidationContext<TRequest>(request);
         var failures = validators
@@ -20,7 +22,9 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
             .ToList();
 
         if (failures.Count != 0)
+        {
             throw new ValidationException(failures);
+        }
 
         return await next();
     }

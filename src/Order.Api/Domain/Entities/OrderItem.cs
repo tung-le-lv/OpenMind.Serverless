@@ -2,12 +2,8 @@ using Order.Api.Domain.ValueObjects;
 
 namespace Order.Api.Domain.Entities;
 
-public class OrderItem()
+public record OrderItem(string ProductId, string ProductName, int Quantity, Money UnitPrice)
 {
-    public string ProductId { get; private set; } = string.Empty;
-    public string ProductName { get; private set; } = string.Empty;
-    public int Quantity { get; private set; }
-    public Money UnitPrice { get; private set; } = Money.Zero;
     public Money Subtotal => Money.FromDecimal(Quantity * UnitPrice.Amount);
 
     public static OrderItem Create(string productId, string productName, int quantity, decimal unitPrice)
@@ -32,37 +28,25 @@ public class OrderItem()
             throw new DomainException("Unit price cannot be negative.");
         }
 
-        return new OrderItem
-        {
-            ProductId = productId,
-            ProductName = productName,
-            Quantity = quantity,
-            UnitPrice = Money.FromDecimal(unitPrice)
-        };
+        return new OrderItem(productId, productName, quantity, Money.FromDecimal(unitPrice));
     }
 
     public static OrderItem Reconstitute(string productId, string productName, int quantity, decimal unitPrice)
     {
-        return new OrderItem
-        {
-            ProductId = productId,
-            ProductName = productName,
-            Quantity = quantity,
-            UnitPrice = Money.FromDecimal(unitPrice)
-        };
+        return new OrderItem(productId, productName, quantity, Money.FromDecimal(unitPrice));
     }
 
-    public void IncreaseQuantity(int amount)
+    public OrderItem IncreaseQuantity(int amount)
     {
         if (amount <= 0)
         {
             throw new DomainException("Amount must be greater than zero.");
         }
 
-        Quantity += amount;
+        return this with { Quantity = Quantity + amount };
     }
 
-    public void DecreaseQuantity(int amount)
+    public OrderItem DecreaseQuantity(int amount)
     {
         if (amount <= 0)
         {
@@ -74,16 +58,16 @@ public class OrderItem()
             throw new DomainException("Quantity cannot be less than 1.");
         }
 
-        Quantity -= amount;
+        return this with { Quantity = Quantity - amount };
     }
 
-    public void UpdateQuantity(int newQuantity)
+    public OrderItem UpdateQuantity(int newQuantity)
     {
         if (newQuantity <= 0)
         {
             throw new DomainException("Quantity must be greater than zero.");
         }
 
-        Quantity = newQuantity;
+        return this with { Quantity = newQuantity };
     }
 }

@@ -74,15 +74,14 @@ public class OrderAggregate
             throw new DomainException("Cannot add items to a non-pending order.");
         }
 
-        var existingItem = _items.FirstOrDefault(i => i.ProductId == productId);
-        if (existingItem != null)
+        var index = _items.FindIndex(i => i.ProductId == productId);
+        if (index >= 0)
         {
-            existingItem.IncreaseQuantity(quantity);
+            _items[index] = _items[index].IncreaseQuantity(quantity);
         }
         else
         {
-            var item = OrderItem.Create(productId, productName, quantity, unitPrice);
-            _items.Add(item);
+            _items.Add(OrderItem.Create(productId, productName, quantity, unitPrice));
         }
 
         RecalculateTotal();
