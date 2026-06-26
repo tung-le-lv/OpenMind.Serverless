@@ -21,7 +21,7 @@ public class GetOrderFunction(IMediator mediator)
         var services = new ServiceCollection();
         services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
         services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
-        services.AddMediatR(cfg => { });
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient<IRequestHandler<GetOrderQuery, OrderDto?>, GetOrderHandler>();
         return services.BuildServiceProvider();
     }

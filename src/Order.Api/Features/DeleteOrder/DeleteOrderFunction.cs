@@ -22,7 +22,7 @@ public class DeleteOrderFunction(IMediator mediator)
         var services = new ServiceCollection();
         services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
         services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
-        services.AddMediatR(cfg => { });
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient<IRequestHandler<DeleteOrderCommand, DeleteOrderResult>, DeleteOrderHandler>();
         return services.BuildServiceProvider();
     }

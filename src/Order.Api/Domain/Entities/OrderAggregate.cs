@@ -4,7 +4,7 @@ using Order.Api.Domain.ValueObjects;
 
 namespace Order.Api.Domain.Entities;
 
-public class OrderAggregate()
+public class OrderAggregate
 {
     private readonly List<OrderItem> _items = [];
     private readonly List<IDomainEvent> _domainEvents = [];
@@ -129,18 +129,7 @@ public class OrderAggregate()
         UpdateTimestamp();
         AddDomainEvent(new OrderCancelledEvent(Id, oldStatus));
     }
-
-    public void UpdateShippingAddress(Address address)
-    {
-        if (Status is OrderStatus.Shipped or OrderStatus.Delivered)
-        {
-            throw new DomainException("Cannot update shipping address for shipped or delivered orders.");
-        }
-
-        ShippingAddress = address;
-        UpdateTimestamp();
-    }
-
+    
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();

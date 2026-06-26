@@ -1,0 +1,2 @@
+FROM public.ecr.aws/lambda/dotnet:8
+COPY . ${LAMBDA_TASK_ROOT}

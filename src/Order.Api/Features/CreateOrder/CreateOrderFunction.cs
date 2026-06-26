@@ -36,7 +36,7 @@ public class CreateOrderFunction(IMediator mediator)
             services.AddSingleton<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>();
             services.AddSingleton<IEventBus, SnsEventBus>();
         }
-        services.AddMediatR(cfg => { });
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient<IRequestHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
         services.AddTransient<IValidator<CreateOrderCommand>, CreateOrderValidator>();
         return services.BuildServiceProvider();

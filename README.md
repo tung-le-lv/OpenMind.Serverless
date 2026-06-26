@@ -1,184 +1,92 @@
-# Order Microservice — Serverless on AWS Lambda
+## Local Development
 
-A serverless order microservice built with **Vertical Slice Architecture**, **CQRS**, and **DDD**, deployed as individual AWS Lambda functions per endpoint using **.NET 9**.
+### One-time setup
 
-## Architecture
+Install the required tools:
 
-Each HTTP endpoint maps to its own Lambda function. Every function owns its full slice — from the HTTP handler down to the domain logic and data access.
+```powershell
+# AWS SAM CLI
+winget install Amazon.SAM-CLI
 
-```
-API Gateway
-    │
-    ├── POST   /orders              → CreateOrderFunction
-    ├── GET    /orders              → GetAllOrdersFunction
-    ├── GET    /orders/{id}         → GetOrderFunction
-    ├── GET    /orders/customer/{customerId} → GetOrdersByCustomerFunction
-    ├── PUT    /orders/{id}/status  → UpdateOrderStatusFunction
-    ├── POST   /orders/{id}/cancel  → CancelOrderFunction
-    ├── POST   /orders/{id}/items   → AddOrderItemFunction
-    └── DELETE /orders/{id}         → DeleteOrderFunction
-                                           │
-                                    [Static DI container]
-                                           │
-                               ┌───────────┴───────────┐
-                          MediatR Handler         DynamoDB / SNS
+# docker-compose (needed by podman compose)
+winget install Docker.DockerCompose
 ```
 
-Each Lambda cold-starts with a **static `ServiceProvider`** that registers only the dependencies that slice needs — no shared container, no cross-slice coupling.
+Add SAM CLI to your PowerShell profile so it's always in PATH:
 
-## Project Structure
-
-```
-src/
-└── Order.Api/                        # Single project — all layers merged
-    ├── Features/                     # Vertical slices (one folder per operation)
-    │   ├── CreateOrder/
-    │   │   ├── CreateOrderCommand.cs
-    │   │   ├── CreateOrderHandler.cs
-    │   │   ├── CreateOrderValidator.cs
-    │   │   └── CreateOrderFunction.cs
-    │   ├── GetOrder/
-    │   ├── GetAllOrders/
-    │   ├── GetOrdersByCustomer/
-    │   ├── UpdateOrderStatus/
-    │   ├── CancelOrder/
-    │   ├── AddOrderItem/
-    │   └── DeleteOrder/
-    │
-    ├── Domain/                       # DDD model
-    │   ├── Entities/                 # OrderAggregate, OrderItem, DomainException
-    │   ├── ValueObjects/             # Money, Address
-    │   ├── Events/                   # OrderCreated, OrderCancelled, ...
-    │   ├── Enums/                    # OrderStatus
-    │   ├── Interfaces/               # IEventBus
-    │   └── Repositories/             # IOrderRepository
-    │
-    ├── Infrastructure/               # AWS adapters
-    │   ├── Repositories/             # DynamoDbOrderRepository
-    │   └── EventBus/                 # SnsEventBus, InMemoryEventBus
-    │
-    ├── Shared/                       # ApiResponse<T>, OrderDto, OrderMapper
-    └── Helpers/                      # ApiResponseHelper
-
-tests/
-├── Order.UnitTests/
-└── Order.IntegrationTests/           # Testcontainers (DynamoDB local)
-
-deploy/
-└── aws/
-    ├── template.yaml                 # AWS SAM — one function resource per endpoint
-    ├── parameters.dev.json
-    └── parameters.prod.json
+```powershell
+# Append to $PROFILE (run once)
+Add-Content $PROFILE "`n`$env:PATH += `";C:\Program Files\Amazon\AWSSAMCLI\bin`""
 ```
 
-## Key Design Decisions
+Verify your Podman machine is configured. The machine name and SSH port are visible via:
 
-**Vertical Slice Architecture** — code is organized by feature, not by technical layer. Adding a new operation means adding one folder under `Features/`, self-contained from Lambda handler to domain logic.
-
-**Static DI per Lambda** — each `XxxFunction` holds a `private static readonly ServiceProvider` built once at cold start. Only that slice's dependencies are registered, keeping the container minimal.
-
-**MediatR with direct registration** — handlers are registered via `services.AddTransient<IRequestHandler<TReq, TRes>, THandler>()` rather than assembly scanning, so only the relevant handler is loaded per function.
-
-**Lambda Powertools** — structured JSON logging (`[Logging]`), X-Ray tracing (`[Tracing]`), and CloudWatch metrics (`[Metrics]`) via attributes on each handler method.
-
-**Rich domain model** — `OrderAggregate` is a DDD aggregate root with value objects (`Money`, `Address`), factory methods, and domain events. Events are published to SNS via `IEventBus` after each mutation.
-
-## Order Status Flow
-
-```
-Pending → Confirmed → Processing → Shipped → Delivered
-   │           │            │
-   └───────────┴────────────┴──────────────→ Cancelled
+```powershell
+podman machine list
+podman machine inspect <machine-name>  # note the SSH Port value
 ```
 
-## API Endpoints
+---
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/orders` | Create a new order |
-| `GET` | `/orders` | List all orders |
-| `GET` | `/orders/{id}` | Get order by ID |
-| `GET` | `/orders/customer/{customerId}` | Get orders by customer |
-| `PUT` | `/orders/{id}/status` | Update order status |
-| `POST` | `/orders/{id}/cancel` | Cancel an order |
-| `POST` | `/orders/{id}/items` | Add item to order |
-| `DELETE` | `/orders/{id}` | Delete an order |
+### Starting a dev session
 
-## Prerequisites
+Run these steps in order each time you open a fresh terminal.
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [AWS CLI](https://aws.amazon.com/cli/)
-- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
-- [Docker](https://www.docker.com/) (for integration tests)
+#### Step 1 — Start DynamoDB Local
 
-## Getting Started
-
-```bash
-# Build
-dotnet build
-
-# Unit tests
-dotnet test tests/Order.UnitTests
-
-# Integration tests (requires Docker for DynamoDB local)
-dotnet test tests/Order.IntegrationTests
+```powershell
+podman compose up -d
 ```
 
-### Local API
+This starts DynamoDB Local on port 8000 and creates the `Orders-local` table with the `CustomerIdIndex` GSI.
 
-```bash
-cd deploy/aws
-sam build
-sam local start-api --parameter-overrides Environment=dev
+#### Step 2 — Build
+
+```powershell
+sam build --template-file deploy/aws/template.yaml --base-dir .
+
+podman build -t order-api-local:latest -f deploy/local/Dockerfile.lambda .aws-sam/build/CreateOrderFunction
 ```
 
-## Deployment
+#### Step 3 — Open SSH tunnel (keep this terminal open)
 
-```bash
-cd deploy/aws
-sam build
+SAM uses the Docker SDK which requires a TCP socket. This tunnel bridges Windows TCP → Podman's Unix socket inside WSL.
 
-# First deploy (interactive)
-sam deploy --guided
-
-# Subsequent deploys
-sam deploy --parameter-overrides Environment=prod --config-file parameters.prod.json
+```powershell
+# Get your machine's SSH port (usually 58765, but verify with: podman machine inspect <name>)
+$key = "$env:USERPROFILE\.local\share\containers\podman\machine\machine"
+ssh -N -L 2375:/run/podman/podman.sock -p 58765 -i $key -o StrictHostKeyChecking=no root@127.0.0.1
 ```
 
-## Sample Requests
+#### Step 4 — Start SAM (new terminal)
 
-### Create Order
-
-```bash
-curl -X POST https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cust-123",
-    "items": [
-      { "productId": "prod-001", "productName": "Widget A", "quantity": 2, "unitPrice": 29.99 }
-    ],
-    "shippingAddress": {
-      "street": "123 Main St", "city": "Seattle", "state": "WA", "zipCode": "98101", "country": "USA"
-    }
-  }'
+```powershell
+$env:DOCKER_HOST = "tcp://127.0.0.1:2375"
+sam local start-api `
+  --template-file deploy/local/template-local.yaml `
+  --docker-network openmind-local `
+  --skip-pull-image
 ```
 
-### Update Order Status
+The API is available at `http://localhost:3000`.
 
-```bash
-curl -X PUT https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders/{id}/status \
-  -H "Content-Type: application/json" \
-  -d '{"status": 1}'
+> **First request per endpoint is slow (~30 s)** while SAM builds the Lambda runtime wrapper image. Every request after that is fast.
+
+---
+
+### After changing code
+
+```powershell
+sam build --template-file deploy/aws/template.yaml --base-dir .
+podman build -t order-api-local:latest -f deploy/local/Dockerfile.lambda .aws-sam/build/CreateOrderFunction
 ```
 
-### Add Item
+Then **Ctrl+C** SAM and re-run the `sam local start-api` command from Step 4.
 
-```bash
-curl -X POST https://{api-id}.execute-api.{region}.amazonaws.com/dev/orders/{id}/items \
-  -H "Content-Type: application/json" \
-  -d '{ "productId": "prod-002", "productName": "Widget B", "quantity": 1, "unitPrice": 49.99 }'
-```
+### Inspect DynamoDB
 
-## License
+Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/workbench.html) to browse data locally.
 
-MIT
+Add a connection: **Operation Builder → Add Connection → DynamoDB Local → hostname `localhost`, port `8000`**.
+
+![NoSQL Workbench](docs/aws-workbench.jpg)

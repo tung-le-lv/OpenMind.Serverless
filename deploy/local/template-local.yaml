@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Local-only SAM template using pre-built container image (avoids Windows path mount issues with Podman)
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Environment:
+      Variables:
+        ORDERS_TABLE: Orders-local
+        USE_LOCAL_EVENT_BUS: "true"
+        AWS_ENDPOINT_URL: http://dynamodb-local:8000
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_DEFAULT_REGION: ap-southeast-2
+        POWERTOOLS_SERVICE_NAME: OrderService
+        POWERTOOLS_METRICS_NAMESPACE: OrderService
+        POWERTOOLS_LOG_LEVEL: INFO
+        POWERTOOLS_LOGGER_LOG_EVENT: "true"
+
+Resources:
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.CreateOrder.CreateOrderFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: POST
+
+  GetOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.GetOrder.GetOrderFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}
+            Method: GET
+
+  GetAllOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.GetAllOrders.GetAllOrdersFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: GET
+
+  GetOrdersByCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.GetOrdersByCustomer.GetOrdersByCustomerFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/customer/{customerId}
+            Method: GET
+
+  UpdateOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.UpdateOrderStatus.UpdateOrderStatusFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}/status
+            Method: PUT
+
+  CancelOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.CancelOrder.CancelOrderFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}/cancel
+            Method: POST
+
+  AddOrderItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.AddOrderItem.AddOrderItemFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}/items
+            Method: POST
+
+  DeleteOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.DeleteOrder.DeleteOrderFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}
+            Method: DELETE

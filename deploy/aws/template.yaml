@@ -4,7 +4,7 @@ Description: Order Microservice - Clean Architecture with CQRS on AWS Lambda
 
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 60
     MemorySize: 512
     Runtime: dotnet8
     Architectures:

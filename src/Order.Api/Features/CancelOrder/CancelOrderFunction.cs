@@ -34,7 +34,7 @@ public class CancelOrderFunction(IMediator mediator)
             services.AddSingleton<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>();
             services.AddSingleton<IEventBus, SnsEventBus>();
         }
-        services.AddMediatR(cfg => { });
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient<IRequestHandler<CancelOrderCommand, CancelOrderResult>, CancelOrderHandler>();
         return services.BuildServiceProvider();
     }
