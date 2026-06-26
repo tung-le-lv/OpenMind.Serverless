@@ -6,9 +6,9 @@ using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Domain.Repositories;
-using Order.Api.Helpers;
 using Order.Api.Infrastructure.Repositories;
 using Order.Api.Shared;
+using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.GetOrdersByCustomer;
 

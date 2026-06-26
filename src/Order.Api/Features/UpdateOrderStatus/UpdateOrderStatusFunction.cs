@@ -7,7 +7,6 @@ using AWS.Lambda.Powertools.Metrics;
 using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Helpers;
 using Order.Api.Shared;
 using System.Text.Json;
 using Order.Api.Domain.Enums;
@@ -15,6 +14,7 @@ using Order.Api.Domain.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
+using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.UpdateOrderStatus;
 

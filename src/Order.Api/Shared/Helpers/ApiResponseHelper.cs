@@ -1,8 +1,7 @@
-using Amazon.Lambda.APIGatewayEvents;
-using Order.Api.Shared;
 using System.Text.Json;
+using Amazon.Lambda.APIGatewayEvents;
 
-namespace Order.Api.Helpers;
+namespace Order.Api.Shared.Helpers;
 
 internal static class ApiResponseHelper
 {

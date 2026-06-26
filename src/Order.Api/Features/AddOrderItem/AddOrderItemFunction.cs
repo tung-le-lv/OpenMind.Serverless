@@ -8,13 +8,13 @@ using AWS.Lambda.Powertools.Tracing;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Helpers;
 using Order.Api.Shared;
 using System.Text.Json;
 using Order.Api.Domain.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
+using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.AddOrderItem;
 
@@ -37,6 +37,7 @@ public class AddOrderItemFunction(IMediator mediator)
             services.AddSingleton<IEventBus, SnsEventBus>();
         }
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient<IRequestHandler<AddOrderItemCommand, AddOrderItemResult>, AddOrderItemHandler>();
         services.AddTransient<IValidator<AddOrderItemCommand>, AddOrderItemValidator>();
         return services.BuildServiceProvider();
@@ -45,7 +46,7 @@ public class AddOrderItemFunction(IMediator mediator)
     public AddOrderItemFunction() : this(_serviceProvider.GetRequiredService<IMediator>()) { }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-    [Logging(LogEvent = true, CorrelationIdPath = CorrelationIdPaths.ApiGatewayRest)]
+    [Logging(LogEvent = false, CorrelationIdPath = CorrelationIdPaths.ApiGatewayRest)]
     [Tracing]
     [Metrics(Namespace = "OrderService", CaptureColdStart = true)]
     public async Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
@@ -69,7 +70,7 @@ public class AddOrderItemFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Invalid request body."));
             }
 
-            Logger.LogInformation("Adding item to order {OrderId}", orderId);
+            Logger.LogInformation($"Adding item to order {orderId}");
 
             var command = new AddOrderItemCommand(
                 orderId, itemRequest.ProductId, itemRequest.ProductName,
@@ -86,9 +87,14 @@ public class AddOrderItemFunction(IMediator mediator)
             Metrics.AddMetric("OrderItemAdded", 1, MetricUnit.Count);
             return ApiResponseHelper.CreateResponse(200, ApiResponse<string>.SuccessResponse("OK", result.Message));
         }
+        catch (ValidationException ex)
+        {
+            var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
+            return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Validation failed.", errors));
+        }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error adding item to order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, $"Error adding item to order {request.PathParameters?["id"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<string>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }

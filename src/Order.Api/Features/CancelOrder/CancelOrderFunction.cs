@@ -9,10 +9,10 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Domain.Interfaces;
 using Order.Api.Domain.Repositories;
-using Order.Api.Helpers;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
 using Order.Api.Shared;
+using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.CancelOrder;
 

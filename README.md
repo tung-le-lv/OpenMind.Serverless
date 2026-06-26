@@ -68,6 +68,12 @@ sam local start-api `
   --skip-pull-image
 ```
 
+Or 
+```powershell
+.\deploy\local\start.ps1
+```
+for better logs formatter.  
+
 The API is available at `http://localhost:3000`.
 
 > **First request per endpoint is slow (~30 s)** while SAM builds the Lambda runtime wrapper image. Every request after that is fast.

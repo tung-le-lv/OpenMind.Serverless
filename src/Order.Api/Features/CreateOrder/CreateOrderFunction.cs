@@ -8,13 +8,13 @@ using AWS.Lambda.Powertools.Tracing;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Helpers;
 using Order.Api.Shared;
 using System.Text.Json;
 using Order.Api.Domain.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
+using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.CreateOrder;
 
@@ -37,6 +37,7 @@ public class CreateOrderFunction(IMediator mediator)
             services.AddSingleton<IEventBus, SnsEventBus>();
         }
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient<IRequestHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
         services.AddTransient<IValidator<CreateOrderCommand>, CreateOrderValidator>();
         return services.BuildServiceProvider();
@@ -45,7 +46,7 @@ public class CreateOrderFunction(IMediator mediator)
     public CreateOrderFunction() : this(_serviceProvider.GetRequiredService<IMediator>()) { }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-    [Logging(LogEvent = true, CorrelationIdPath = CorrelationIdPaths.ApiGatewayRest)]
+    [Logging(LogEvent = false, CorrelationIdPath = CorrelationIdPaths.ApiGatewayRest)]
     [Tracing]
     [Metrics(Namespace = "OrderService", CaptureColdStart = true)]
     public async Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
@@ -63,7 +64,7 @@ public class CreateOrderFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Invalid request body."));
             }
 
-            Logger.LogInformation("Creating order for customer {CustomerId}", command.CustomerId);
+            Logger.LogInformation($"Doing creating order for customer {command.CustomerId}");
 
             var result = await mediator.Send(command);
 
@@ -76,6 +77,11 @@ public class CreateOrderFunction(IMediator mediator)
 
             return ApiResponseHelper.CreateResponse(201, ApiResponse<object>.SuccessResponse(
                 new { OrderId = result.OrderId }, result.Message));
+        }
+        catch (ValidationException ex)
+        {
+            var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
+            return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Validation failed.", errors));
         }
         catch (Exception ex)
         {
