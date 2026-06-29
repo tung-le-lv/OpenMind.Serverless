@@ -1,5 +1,5 @@
-using MediatR;
-using Order.Api.Shared;
+﻿using MediatR;
+using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.GetAllOrders;
 

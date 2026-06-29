@@ -1,6 +1,7 @@
 using Order.Api.Domain.Entities;
+using Order.Api.Domain.ValueObjects;
 
-namespace Order.Api.Shared;
+namespace Order.Api.Application.Dtos;
 
 public static class OrderMapper
 {

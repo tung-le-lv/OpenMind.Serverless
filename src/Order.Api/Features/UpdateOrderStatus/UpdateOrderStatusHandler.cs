@@ -1,6 +1,6 @@
-using MediatR;
+﻿using MediatR;
 using Order.Api.Domain.Entities;
-using Order.Api.Domain.Interfaces;
+using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.UpdateOrderStatus;

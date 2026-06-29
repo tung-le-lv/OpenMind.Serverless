@@ -1,8 +1,8 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Order.Api.Domain.Events;
-using Order.Api.Domain.Interfaces;
+using Order.Api.Application.Interfaces;
 
 namespace Order.Api.Infrastructure.EventBus;
 

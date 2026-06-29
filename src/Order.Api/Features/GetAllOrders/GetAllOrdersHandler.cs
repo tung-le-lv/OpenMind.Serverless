@@ -1,6 +1,6 @@
-using MediatR;
+﻿using MediatR;
 using Order.Api.Domain.Repositories;
-using Order.Api.Shared;
+using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.GetAllOrders;
 

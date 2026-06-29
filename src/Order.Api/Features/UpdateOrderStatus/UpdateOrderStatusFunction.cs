@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Shared;
 using System.Text.Json;
 using Order.Api.Domain.Enums;
-using Order.Api.Domain.Interfaces;
+using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;

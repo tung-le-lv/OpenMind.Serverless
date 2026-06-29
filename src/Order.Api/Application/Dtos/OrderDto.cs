@@ -1,6 +1,6 @@
 using Order.Api.Domain.Enums;
 
-namespace Order.Api.Shared;
+namespace Order.Api.Application.Dtos;
 
 public record OrderDto(
     string Id,

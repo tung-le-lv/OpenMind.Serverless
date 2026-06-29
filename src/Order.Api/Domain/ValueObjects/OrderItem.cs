@@ -1,6 +1,6 @@
-using Order.Api.Domain.ValueObjects;
+using Order.Api.Domain.Entities;
 
-namespace Order.Api.Domain.Entities;
+namespace Order.Api.Domain.ValueObjects;
 
 public record OrderItem(string ProductId, string ProductName, int Quantity, Money UnitPrice)
 {

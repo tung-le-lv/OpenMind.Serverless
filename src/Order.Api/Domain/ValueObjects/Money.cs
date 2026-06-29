@@ -58,8 +58,7 @@ public sealed class Money(decimal amount, string currency = "USD") : IEquatable<
 
     public override int GetHashCode() => HashCode.Combine(Amount, Currency);
 
-    public static bool operator ==(Money? left, Money? right) =>
-        left?.Equals(right) ?? right is null;
+    public static bool operator ==(Money? left, Money? right) => left?.Equals(right) ?? right is null;
 
     public static bool operator !=(Money? left, Money? right) => !(left == right);
 

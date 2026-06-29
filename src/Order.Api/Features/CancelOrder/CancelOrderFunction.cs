@@ -7,7 +7,7 @@ using AWS.Lambda.Powertools.Metrics;
 using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Domain.Interfaces;
+using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;

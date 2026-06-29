@@ -1,4 +1,4 @@
-using Amazon.DynamoDBv2;
+﻿using Amazon.DynamoDBv2;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using AWS.Lambda.Powertools.Logging;
@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.Repositories;
 using Order.Api.Shared;
+using Order.Api.Application.Dtos;
 using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.GetAllOrders;

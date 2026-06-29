@@ -1,5 +1,5 @@
-using FluentValidation;
-using Order.Api.Shared;
+﻿using FluentValidation;
+using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.CreateOrder;
 

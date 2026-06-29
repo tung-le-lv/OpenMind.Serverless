@@ -1,6 +1,6 @@
 using Order.Api.Domain.Events;
 
-namespace Order.Api.Domain.Interfaces;
+namespace Order.Api.Application.Interfaces;
 
 public interface IEventBus
 {
