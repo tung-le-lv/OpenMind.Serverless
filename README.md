@@ -1,4 +1,4 @@
-## Local Debug
+## Local Development
 
 ### Start DynamoDB Local
 
@@ -149,3 +149,6 @@ Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/develope
 Add a connection: **Operation Builder → Add Connection → DynamoDB Local → hostname `localhost`, port `8000`**.
 
 ![NoSQL Workbench](docs/aws-workbench.jpg)
+
+## References
+https://github.com/serverless/examples/tree/master/aws-dotnet-rest-api-with-dynamodb
