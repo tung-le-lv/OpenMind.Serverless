@@ -1,11 +1,12 @@
 using MediatR;
+using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Repositories;
 using Order.Api.Domain.ValueObjects;
 
 namespace Order.Api.Features.CreateOrder;
 
-public class CreateOrderHandler(IOrderRepository orderRepository)
+public class CreateOrderHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<CreateOrderCommand, CreateOrderResult>
 {
     public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -32,6 +33,12 @@ public class CreateOrderHandler(IOrderRepository orderRepository)
             }
 
             await orderRepository.AddAsync(order, cancellationToken);
+
+            foreach (var domainEvent in order.DomainEvents)
+            {
+                await eventBus.PublishAsync(domainEvent, cancellationToken);
+            }
+            order.ClearDomainEvents();
 
             return new CreateOrderResult(true, order.Id, "Order created successfully.", null);
         }

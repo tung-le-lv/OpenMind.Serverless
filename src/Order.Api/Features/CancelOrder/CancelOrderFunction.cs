@@ -34,7 +34,8 @@ public partial class CancelOrderFunction(IMediator mediator)
 
             if (!result.Success)
             {
-                return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse(result.Message ?? "Failed to cancel order.", result.Errors));
+                var statusCode = result.Message?.Contains("not found") == true ? 404 : 400;
+                return ApiResponseHelper.CreateResponse(statusCode, ApiResponse<string>.ErrorResponse(result.Message ?? "Failed to cancel order.", result.Errors));
             }
 
             Metrics.AddMetric("OrderCancelled", 1, MetricUnit.Count);

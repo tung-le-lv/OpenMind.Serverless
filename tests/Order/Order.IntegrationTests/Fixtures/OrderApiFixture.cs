@@ -3,12 +3,13 @@ using Amazon.DynamoDBv2.Model;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.AddOrderItem;
 using Order.Api.Features.CreateOrder;
-using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
+
 using Order.Api.Shared;
 using Testcontainers.DynamoDb;
 using Xunit;
@@ -45,6 +46,7 @@ public class OrderApiFixture : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddSingleton<IAmazonDynamoDB>(dynamoDbClient);
         services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
+        services.AddSingleton<IEventBus>(new Mock<IEventBus>().Object);
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient<IValidator<CreateOrderCommand>, CreateOrderValidator>();
