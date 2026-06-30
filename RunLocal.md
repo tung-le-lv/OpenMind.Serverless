@@ -1,22 +1,24 @@
 # Running Locally
 
-End-to-end guide: start the stack, send requests, and observe logs across all Lambda functions connected via SNS → SQS.
+This local run heavily depends on localstack. Used for testing integration between lambda functions.  
+```
+POST /orders/{id}/place
+  └─ PlaceOrderFunction (Lambda)
+       └─ publishes OrderPlaced → SNS: order-events-topic-local
+            └─ fans out → SQS: payment-order-events-sqs-local
+                 └─ ProcessPaymentFunction (Lambda)
+                      └─ publishes PaymentProcessed → SNS: payment-events-topic-local
+                           └─ fans out → SQS: order-payment-events-sqs-local
+                                └─ HandlePaymentProcessedFunction (Lambda)
+```
 
-All services run via LocalStack — no SAM CLI or SSH tunnel required.
+All setup relating to SNS, SQS, Lamda, etc are defined in localstack-http-setup in docker-composed.
 
----
-
-## Prerequisites
-
-Install once:
+## Start infrastructure
 
 ```powershell
 winget install Docker.DockerCompose   # required by podman compose
 ```
-
----
-
-## Start infrastructure
 
 ```powershell
 podman compose up -d
@@ -30,8 +32,8 @@ This starts and auto-configures:
 | LocalStack | `localhost:4566` — SNS topics, SQS queues, Lambda registrations, API Gateway |
 | `CreateOrderFunction` | registered in LocalStack, HTTP via API Gateway |
 | `PlaceOrderFunction` | registered in LocalStack, HTTP via API Gateway |
-| `ProcessPaymentFunction` | registered in LocalStack, triggered by `payment-order-events-sqs` |
-| `HandlePaymentProcessedFunction` | registered in LocalStack, triggered by `order-payment-events-sqs` |
+| `ProcessPaymentFunction` | registered in LocalStack, triggered by `payment-order-events-sqs-local` |
+| `HandlePaymentProcessedFunction` | registered in LocalStack, triggered by `order-payment-events-sqs-local` |
 
 ---
 
@@ -50,7 +52,12 @@ This publishes two self-contained linux-x64 ZIPs — one per bounded context, no
 | `publish/order-api.zip` | `CreateOrderFunction`, `PlaceOrderFunction`, `HandlePaymentProcessedFunction`, and all other Order API functions |
 | `publish/payment-api.zip` | `ProcessPaymentFunction` |
 
----
+The Lambda functions in LocalStack are registered by the setup containers (localstack-setup and localstack-http-setup) which only run once at startup — a full down && up re-runs them so LocalStack picks up the new ZIPs.
+
+```powershell
+podman compose down
+podman compose up -d
+```
 
 ## API Gateway base URL
 
@@ -144,30 +151,11 @@ Content-Type: application/json
 }
 ```
 
-Note the `orderId` from the response.
-
-### Place the order (triggers the full event-driven flow)
+### Place the order
 
 ```http
 POST {BASE_URL}/orders/{orderId}/place
 ```
-
----
-
-## What happens end-to-end
-
-```
-POST /orders/{id}/place
-  └─ PlaceOrderFunction (LocalStack)
-       └─ publishes OrderPlaced → SNS: order-events-topic-local
-            └─ fans out → SQS: payment-order-events-sqs
-                 └─ ProcessPaymentFunction (LocalStack)
-                      └─ publishes PaymentProcessed → SNS: payment-events-topic-local
-                           └─ fans out → SQS: order-payment-events-sqs
-                                └─ HandlePaymentProcessedFunction (LocalStack)
-```
-
----
 
 ## After changing code
 
