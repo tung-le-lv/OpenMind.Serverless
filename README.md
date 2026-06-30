@@ -1,6 +1,6 @@
 ## Serverless Architecture and Function As A Service
 
-### Serverless Architecture vs Function as a Service
+### Definition
 
 **Serverless Architecture** is a broader design philosophy: you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume — idle resources cost nothing.
 
@@ -30,17 +30,12 @@ The relationship is:
 
 | Layer | AWS Service | Why it fits |
 |---|---|---|
-| **Compute** | Lambda | Runs your functions on demand; scales from zero to thousands of concurrent executions automatically |
-| **HTTP API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
-| **Async messaging** | SNS | Fan-out pub/sub; one event (e.g. `OrderCreated`) notifies multiple downstream Lambdas in parallel |
-| **Queue / buffering** | SQS | Decouples producers from consumers; Lambda polls the queue and processes messages in batches; retries on failure |
-| **Event routing** | EventBridge | Rule-based routing of domain events between services; supports cron schedules (e.g. expire abandoned carts nightly) |
+| **Compute** | Lambda | Runs functions on demand; scales from zero to thousands of concurrent executions automatically |
 | **Database** | DynamoDB | Fully managed NoSQL; scales with Lambda automatically; no connection pool to manage (critical for FaaS) |
-| **File storage** | S3 | Object storage for uploads, exports, and static assets; triggers Lambda on `PutObject` events |
+| **Async messaging** | SNS/SQS | Fan-out pub/sub |
+| **File storage** | S3 | Object storage |
 | **Orchestration** | Step Functions | Coordinates multi-step workflows (e.g. order → payment → fulfillment → notification) with retries, timeouts, and branching |
-| **Auth** | Cognito | Managed user pools and JWT issuance; API Gateway validates tokens before invoking Lambda |
-| **Secrets** | Secrets Manager / SSM Parameter Store | Injects credentials and config into Lambda at runtime without hardcoding them |
-| **Observability** | CloudWatch + X-Ray | Centralized logs, metrics, and distributed tracing across all Lambda invocations |
+| **HTTP API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
 
 ### How to organize your code
 
@@ -73,12 +68,11 @@ Features/
 ## Local Development
 
 ### Start DynamoDB Local
+This launches DynamoDB container along with creating GSI and seeding sample data.
 
 ```powershell
 podman compose up -d
 ```
-
-This launches DynamoDB container a long with creating GIS and seeding sample data.
 
 ### Lambda Test Tool
 

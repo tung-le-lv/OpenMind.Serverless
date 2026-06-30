@@ -7,7 +7,7 @@ public interface IDomainEvent
     string EventType { get; }
 }
 
-public abstract class DomainEventBase : IDomainEvent
+public abstract record DomainEventBase : IDomainEvent
 {
     public string EventId { get; } = Guid.NewGuid().ToString();
     public DateTime OccurredAt { get; } = DateTime.UtcNow;
