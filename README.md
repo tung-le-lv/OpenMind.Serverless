@@ -1,24 +1,12 @@
-## Serverless Architecture and Function As A Service
+## Serverless Architecture and Function as a Service
 
-### Definition
+### Overview
 
-**Serverless Architecture** is a broader design philosophy: you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume — idle resources cost nothing.
-
-Serverless is not a single technology. It is a combination of managed services working together:
-
-```
-Client → API Gateway → Lambda (compute)
-                         ↓
-                      DynamoDB (database)       ← all serverless
-                      SNS / SQS (messaging)
-                      S3 (storage)
-                      EventBridge (events)
-```
+**Serverless Architecture** is a design philosophy where you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume and idle resources cost nothing. Scaling is special, where resources can be scaled to down Zero.
 
 **Function as a Service (FaaS)** is the *compute* layer of a serverless architecture. It is one specific piece — the part that runs your code. AWS Lambda is the FaaS offering on AWS. You deploy a function, define what triggers it, and the platform runs it on demand in a short-lived container.
 
-The relationship is:
-> Serverless Architecture **contains** FaaS. FaaS **is not** the whole of serverless.
+> Serverless Architecture contains FaaS. FaaS is not the whole of serverless.
 
 **Key constraints of FaaS to design around:**
 - **Stateless** — no in-memory state survives between invocations. Persist everything to DynamoDB, S3, or ElastiCache.
@@ -26,29 +14,20 @@ The relationship is:
 - **Short-lived** — AWS Lambda enforces a 15-minute maximum timeout. Long-running work (report generation, bulk imports) belongs in ECS Tasks or Step Functions.
 - **Event-driven** — functions are triggered by something: an HTTP request, a queue message, a schedule, a file upload. There is no "always-on" process.
 
-### AWS Services for Serverless Architecture
+### Design Strategy
 
-| Layer | AWS Service | Why it fits |
-|---|---|---|
-| **Compute** | Lambda | Runs functions on demand; scales from zero to thousands of concurrent executions automatically |
-| **Database** | DynamoDB | Fully managed NoSQL; scales with Lambda automatically; no connection pool to manage (critical for FaaS) |
-| **Async messaging** | SNS/SQS | Fan-out pub/sub |
-| **File storage** | S3 | Object storage |
-| **Orchestration** | Step Functions | Coordinates multi-step workflows (e.g. order → payment → fulfillment → notification) with retries, timeouts, and branching |
-| **HTTP API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
+Functions should be grouped by Bounded Context (BC). In general, each BC should be owned by a single team and have its own Git repository.  
 
-### How to organize your code
+BC is a self-contained business domain with its own ubiquitous language, domain model, and team ownership. Visit https://github.com/tung-le-lv/OpenMind.DDD.Patterns for more.  
 
-**One repository per bounded context.** A bounded context is a self-contained business domain with its own language, data model, and team ownership. Splitting by bounded context keeps each repo focused and independently deployable.
-
-In an e-commerce platform:
+In an e-commerce platform, we typically have the following BCs:
 
 ```
-order-service/          ← order lifecycle, line items, status
-catalog-service/        ← product listings, inventory levels, pricing
-customer-service/       ← accounts, addresses, loyalty points
-payment-service/        ← charge, refund, payment method management
-notification-service/   ← email, SMS, push notifications
+order/          ← order lifecycle, line items, status
+catalog/        ← product listings, inventory levels, pricing
+customer/       ← accounts, addresses, loyalty points
+payment/        ← charge, refund, payment method management
+notification/   ← email, SMS, push notifications
 ```
 
 **Within a repo, one function per use case.** Each AWS Lambda function corresponds to one business operation. In this repo each feature folder under `Features/` maps to a separately deployable Lambda:
@@ -62,8 +41,18 @@ Features/
   UpdateOrderStatus/ → UpdateOrderStatusFunction
 ```
 
-**Shared infrastructure lives at the repo level.** DynamoDB tables, SNS topics, SQS queues, and IAM roles are declared once in the SAM template (`deploy/aws/template.yaml`) and shared across all functions in the bounded context. Cross-context communication happens exclusively through events (SNS/EventBridge), never direct DB access.
+Note that I made Payment BC part of the same git repo as Order BC for demonstration purpose.
 
+### AWS Services for Serverless Architecture
+
+| Layer | AWS Service | Why it fits |
+|---|---|---|
+| **Compute** | Lambda | Runs functions on demand; scales from zero to thousands of concurrent executions automatically |
+| **Database** | DynamoDB | Scales at the table level; fully managed NoSQL; scales with Lambda automatically; no connection pool to manage (critical for FaaS) |
+| **Async messaging** | SNS/SQS | Fan-out pub/sub |
+| **File storage** | S3 | Object storage |
+| **Orchestration** | Step Functions | Coordinates multi-step workflows (e.g. order → payment → fulfillment → notification) with retries, timeouts, and branching. This is actually a Process Manager or Saga Orchestator |
+| **REST API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
 
 ## Local Development
 
