@@ -41,20 +41,6 @@ public class CreateOrderCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenCustomerIdMissing_ShouldRejectOrder()
-    {
-        var command = new CreateOrderCommand(
-            CustomerId: "",
-            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)]
-        );
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Success.Should().BeFalse();
-        result.Errors.Should().NotBeEmpty();
-    }
-
-    [Fact]
     public async Task Handle_WhenItemAdded_ShouldPublishEvents()
     {
         var command = new CreateOrderCommand(

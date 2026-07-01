@@ -130,7 +130,7 @@ public class OrderAggregate
 
     public void Cancel()
     {
-        if (Status is OrderStatus.Shipped or OrderStatus.Delivered)
+        if (!Status.CanTransitionTo(OrderStatus.Cancelled))
         {
             throw new DomainException("Cannot cancel an order that has been shipped or delivered.");
         }

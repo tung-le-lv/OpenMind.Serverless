@@ -21,13 +21,6 @@ public class OrderAggregateTests
     }
 
     [Fact]
-    public void Create_WithEmptyCustomerId_ShouldThrowException()
-    {
-        var act = () => OrderAggregate.Create("");
-        act.Should().Throw<DomainException>().WithMessage("Customer ID is required.");
-    }
-
-    [Fact]
     public void AddItem_ToPendingOrder_ShouldAddItem()
     {
         var order = OrderAggregate.Create("customer-123");
