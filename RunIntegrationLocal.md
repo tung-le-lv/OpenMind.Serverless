@@ -4,11 +4,11 @@ This local run heavily depends on localstack. Used for testing integration betwe
 ```
 POST /orders/{id}/place
   └─ PlaceOrderFunction (Lambda)
-       └─ publishes OrderPlaced → SNS: order-events-topic-local
-            └─ fans out → SQS: payment-order-events-sqs-local
+       └─ publishes OrderPlaced → SNS: order-events-topic-local.fifo
+            └─ fans out → SQS: payment-order-events-sqs-local.fifo
                  └─ ProcessPaymentFunction (Lambda)
-                      └─ publishes PaymentProcessed → SNS: payment-events-topic-local
-                           └─ fans out → SQS: order-payment-events-sqs-local
+                      └─ publishes PaymentProcessed → SNS: payment-events-topic-local.fifo
+                           └─ fans out → SQS: order-payment-events-sqs-local.fifo
                                 └─ HandlePaymentProcessedFunction (Lambda)
 ```
 
@@ -41,8 +41,8 @@ This starts and auto-configures:
 | LocalStack | `localhost:4566` — SNS topics, SQS queues, Lambda registrations, API Gateway |
 | `CreateOrderFunction` | registered in LocalStack, HTTP via API Gateway |
 | `PlaceOrderFunction` | registered in LocalStack, HTTP via API Gateway |
-| `ProcessPaymentFunction` | registered in LocalStack, triggered by `payment-order-events-sqs-local` |
-| `HandlePaymentProcessedFunction` | registered in LocalStack, triggered by `order-payment-events-sqs-local` |
+| `ProcessPaymentFunction` | registered in LocalStack, triggered by `payment-order-events-sqs-local.fifo` |
+| `HandlePaymentProcessedFunction` | registered in LocalStack, triggered by `order-payment-events-sqs-local.fifo` |
 
 ---
 

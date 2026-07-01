@@ -7,4 +7,5 @@ public record OrderPlacedEvent(
 ) : DomainEventBase
 {
     public override string EventType => "OrderPlaced";
+    public override string MessageGroupId => OrderId;
 }
