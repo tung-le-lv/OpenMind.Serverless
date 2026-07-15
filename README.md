@@ -319,5 +319,5 @@ Add a connection: **Operation Builder → Add Connection → DynamoDB Local → 
 Refer [RunIntegrationLocal.md](RunIntegrationLocal.md) and [RunLocalAndDebug.md](RunLocalAndDebug.md).
 
 ## References
-https://github.com/aws-samples
+https://github.com/aws-samples  
 https://github.com/serverless/examples/tree/master/aws-dotnet-rest-api-with-dynamodb
