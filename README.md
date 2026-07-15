@@ -63,6 +63,23 @@ Features/
 
 Note that I made Payment BC part of the same git repo as Order BC for demonstration purpose.
 
+### Is deploying a microservice as a single lambda function anti-pattern?
+
+It's genuinely not an anti-pattern. Deploying a whole microservice as a single Lambda is legitimate, often recommended default.  
+
+Within a single service, the single-function approach stops being optimal only when these shows up:  
+
+1. **IAM least-privilege.** One function needs the *union* of every route's permissions. If handler A writes DynamoDB, B publishes SNS, C reads S3, the one execution role holds all three — wider blast radius on a compromised or buggy handler. This is the strongest real argument for splitting.
+2. **Cold-start via bundle size.** All handlers + all dependencies ship in one artifact. If one route drags in a heavy SDK, *every* route pays that init cost on cold start. Per-function, each stays minimal.
+3. **Config is per-function.** Memory, timeout, ephemeral storage are set at the function level. If one route needs 2GB/5min and the rest need 256MB/3s, you either over-provision everyone (and Lambda bills memory×duration, so you pay for it) or you split. Memory also scales CPU, so this couples cost and latency.
+4. **No scaling isolation.** All routes share one concurrency pool. A noisy endpoint can exhaust concurrency and throttle its siblings — no bulkhead. If a route must never be starved, or needs its own throttle, that earns its own function.  
+
+None of these apply by default. So the right heuristic is: **start with a single lambda per microservice, then selectively extract** a route into its own function when it demonstrably exhibits one of the above.  
+
+The genuinely damaging anti-pattern is the opposite extreme — one Lambda per route as a default (nano-functions). It multiplies cold starts, IAM sprawl, and deployment coordination while buying isolation you usually don't need.  
+
+A side benefit of the single-Lambda approach: an ASP.NET Core app running as one Lambda is a normal web app. If you ever need to escape Lambda's limits, you lift the same artifact onto ECS/Fargate with almost no code change.  
+
 ## AWS Services for Serverless Architecture
 
 | Layer | AWS Service | Why it fits |
